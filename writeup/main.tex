@@ -1,25 +1,36 @@
-% CVPR 2026 Submission Template
-% Based on: https://www.overleaf.com/latex/templates/cvpr-2022-author-kit/qbmjsdxryffn
+% CVPR 2026 Paper Template; see
+% https://github.com/cvpr-org/author-kit
 
 \documentclass[10pt,twocolumn,letterpaper]{article}
 
-%%%%%%%%% PACKAGES
-\usepackage{cvpr}
-\usepackage{times}
-\usepackage{epsfig}
-\usepackage{graphicx}
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{booktabs}
-\usepackage{multirow}
-\usepackage{hyperref}
-\usepackage{float}
-\usepackage{subcaption}
+%%%%%%%% PAPER TYPE  PLEASE UPDATE FOR FINAL VERSION
+% \usepackage{cvpr}              % To produce the CAMERA-READY version
+\usepackage[review]{cvpr}      % To produce the REVIEW version
+% \usepackage[pagenumbers]{cvpr} % To force page numbers, e.g. for an arXiv version
 
+% Import additional packages in the preamble file, before hyperref
+\input{preamble}
+
+% It is strongly recommended to use hyperref, especially for the review version.
+% hyperref with option pagebackref eases the reviewers' job.
+% Please disable hyperref *only* if you encounter grave issues,
+% e.g. with the file validation for the camera-ready version.
+%
 % If you comment hyperref and then uncomment it, you should delete
 % egpaper.aux before re-running latex. (Or just hit 'q' on the first latex
 % run, let it hierarchically stop, and then recompile.)
-\def\cvprPaperID{EE655}
+\usepackage[pagebackref,breaklinks,colorlinks]{hyperref}
+
+% If you wish to avoid re-using figure/table numbers from the main paper
+% in the supplemental, please uncomment the following three lines:
+% \setcounter{figure}{0}
+% \setcounter{table}{0}
+% \renewcommand\thefigure{S\arabic{figure}}
+% \renewcommand\thetable{S\arabic{table}}
+
+%%%%%%%%% PAPER ID  - PLEASE UPDATE
+\def\cvprPaperID{EE655} % *** Enter the CVPR Paper ID here
+\def\confName{EE655 Computer Vision}
 \def\confYear{2026}
 
 \begin{document}
@@ -52,7 +63,7 @@ Railway track fault detection is a critical task for ensuring the safety and rel
 \section{Introduction}
 \label{sec:intro}
 
-Railway networks form the backbone of transportation infrastructure in many countries, including India. Ensuring the structural integrity of railway tracks is paramount to passenger safety and operational efficiency. Faults such as cracks, fractures, corroded joints, and misaligned rails can lead to catastrophic derailments if left undetected~\cite{dosovitskiy2020image}.
+Railway networks form the backbone of transportation infrastructure in many countries, including India. Ensuring the structural integrity of railway tracks is paramount to passenger safety and operational efficiency. Faults such as cracks, fractures, corroded joints, and misaligned rails can lead to catastrophic derailments if left undetected~\cite{gibert2017deep}.
 
 Traditionally, track inspection has relied on manual walk-throughs by trained personnel or specialized measurement vehicles. These methods are expensive, slow, and limited in coverage. With the advent of deep learning and computer vision, there has been significant interest in automating fault detection from visual imagery captured via track-side or drone-mounted cameras.
 
@@ -78,9 +89,9 @@ Traditionally, track inspection has relied on manual walk-throughs by trained pe
 \section{Related Work}
 \label{sec:related}
 
-\textbf{Railway Fault Detection.} Early approaches to automated rail inspection relied on traditional image processing techniques such as edge detection, template matching, and histogram-based features~\cite{mandriota2004filter}. With the rise of deep learning, CNN-based methods have demonstrated superior performance. Studies have applied VGG, ResNet, and custom CNNs to railway surface defect detection with promising results.
+\textbf{Railway Fault Detection.} Early approaches to automated rail inspection relied on traditional image processing techniques such as edge detection, template matching, and histogram-based features~\cite{mandriota2004filter}. With the rise of deep learning, CNN-based methods have demonstrated superior performance. Studies have applied VGG, ResNet, and custom CNNs to railway surface defect detection with promising results~\cite{gibert2017deep, faghih2019deep}.
 
-\textbf{Vision Transformers.} Dosovitskiy~et~al.~\cite{dosovitskiy2020image} introduced the Vision Transformer (ViT), which treats an image as a sequence of fixed-size patches and applies the standard Transformer encoder~\cite{vaswani2017attention} to model spatial relationships. ViT has shown competitive or superior performance to CNNs when trained on large-scale datasets (ImageNet-21k, JFT-300M). Subsequent works such as DeiT~\cite{touvron2021training} introduced data-efficient training strategies, knowledge distillation, and strong augmentation to enable ViT training on smaller datasets like ImageNet-1k.
+\textbf{Vision Transformers.} Dosovitskiy~\etal~\cite{dosovitskiy2020image} introduced the Vision Transformer (ViT), which treats an image as a sequence of fixed-size patches and applies the standard Transformer encoder~\cite{vaswani2017attention} to model spatial relationships. ViT has shown competitive or superior performance to CNNs when trained on large-scale datasets (ImageNet-21k, JFT-300M). Subsequent works such as DeiT~\cite{touvron2021training} introduced data-efficient training strategies, knowledge distillation, and strong augmentation to enable ViT training on smaller datasets like ImageNet-1k.
 
 \textbf{ViTs on Small Datasets.} Training ViTs from scratch on small datasets is challenging due to their lack of inductive biases (translation equivariance, locality) that CNNs inherently possess~\cite{dosovitskiy2020image}. Strategies to mitigate this include heavy data augmentation, regularization (dropout, weight decay), and architectural modifications. Our work explores these strategies in the context of railway fault detection.
 
@@ -88,7 +99,7 @@ Traditionally, track inspection has relied on manual walk-throughs by trained pe
 \section{Proposed Method}
 \label{sec:method}
 
-We implement a standard Vision Transformer architecture~\cite{dosovitskiy2020image} adapted for binary classification of railway track images. Figure~\ref{fig:architecture} provides an overview of our pipeline.
+We implement a standard Vision Transformer architecture~\cite{dosovitskiy2020image} adapted for binary classification of railway track images. \cref{fig:architecture} provides an overview of our pipeline.
 
 \begin{figure}[t]
 \centering
@@ -176,7 +187,7 @@ For validation and testing, only resize and normalization are applied.
 \subsection{Dataset}
 \label{sec:dataset}
 
-We use the \textit{Railway Track Fault Detection} dataset, which contains RGB images of railway tracks captured under various conditions. The dataset is organized into two classes as shown in Table~\ref{tab:dataset}.
+We use the \textit{Railway Track Fault Detection} dataset, which contains RGB images of railway tracks captured under various conditions. The dataset is organized into two classes as shown in \cref{tab:dataset}.
 
 \begin{table}[h]
 \centering
@@ -198,7 +209,7 @@ The original images are $960 \times 720$ pixels in RGB format. All images are re
 
 \subsection{Implementation Details}
 
-Our implementation details are summarized in Table~\ref{tab:hyperparams}. The entire model is implemented from scratch in PyTorch without using any pretrained weights.
+Our implementation details are summarized in \cref{tab:hyperparams}. The entire model is implemented from scratch in PyTorch without using any pretrained weights.
 
 \begin{table}[h]
 \centering
@@ -234,7 +245,7 @@ Loss function & Cross-Entropy \\
 
 \subsection{Training Results}
 
-Table~\ref{tab:training} presents the training dynamics across selected epochs. The model steadily improves from random initialization (52\% train accuracy at epoch 1) to over 80\% validation accuracy.
+\cref{tab:training} presents the training dynamics across selected epochs. The model steadily improves from random initialization (52\% train accuracy at epoch 1) to over 80\% validation accuracy.
 
 \begin{table}[h]
 \centering
@@ -267,7 +278,7 @@ Table~\ref{tab:training} presents the training dynamics across selected epochs. 
 
 \subsection{Test Results}
 
-The best model (selected based on validation accuracy) is evaluated on the held-out test set of 22 images. Results are presented in Table~\ref{tab:test_results}.
+The best model (selected based on validation accuracy) is evaluated on the held-out test set of 22 images. Results are presented in \cref{tab:test_results}.
 
 \begin{table}[h]
 \centering
@@ -293,7 +304,7 @@ Non-defective   & --  & --  & --  \\
 
 \subsection{Effect of Data Augmentation}
 
-Data augmentation plays a crucial role in our pipeline given the extremely limited training set of only 300 images. Without augmentation, the model rapidly overfits within the first few epochs. Our augmentation strategy (Section~\ref{sec:augmentation}) introduces sufficient variation to regularize the learning process, effectively increasing the diversity of training samples seen across epochs.
+Data augmentation plays a crucial role in our pipeline given the extremely limited training set of only 300 images. Without augmentation, the model rapidly overfits within the first few epochs. Our augmentation strategy (\cref{sec:augmentation}) introduces sufficient variation to regularize the learning process, effectively increasing the diversity of training samples seen across epochs.
 
 \subsection{ViT vs.\ CNN Considerations}
 
@@ -304,7 +315,7 @@ Vision Transformers lack the inductive biases (locality, translation equivarianc
     \item Aggressive augmentation partially compensates for the lack of inductive bias.
 \end{itemize}
 
-A CNN-based baseline (e.g., ResNet-18) would likely achieve higher accuracy on this dataset size due to built-in locality priors. However, the ViT approach demonstrates the general applicability of transformer architectures to this domain.
+A CNN-based baseline (\eg, ResNet-18) would likely achieve higher accuracy on this dataset size due to built-in locality priors. However, the ViT approach demonstrates the general applicability of transformer architectures to this domain.
 
 \subsection{Limitations}
 
@@ -333,6 +344,7 @@ We presented a Vision Transformer-based approach for automated railway track fau
 
 %----------------------------------------------------------------------
 
+%%%%%%%%% REFERENCES
 {\small
 \bibliographystyle{ieee_fullname}
 \begin{thebibliography}{10}
