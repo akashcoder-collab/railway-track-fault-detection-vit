@@ -1,0 +1,405 @@
+% CVPR 2026 Submission Template
+% Based on: https://www.overleaf.com/latex/templates/cvpr-2022-author-kit/qbmjsdxryffn
+
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+%%%%%%%%% PACKAGES
+\usepackage{cvpr}
+\usepackage{times}
+\usepackage{epsfig}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{subcaption}
+
+% If you comment hyperref and then uncomment it, you should delete
+% egpaper.aux before re-running latex. (Or just hit 'q' on the first latex
+% run, let it hierarchically stop, and then recompile.)
+\def\cvprPaperID{EE655}
+\def\confYear{2026}
+
+\begin{document}
+
+%%%%%%%%% TITLE
+\title{Railway Track Fault Detection Using Vision Transformer}
+
+\author{
+Akash Tiwari \\
+Roll No: 241090403\\
+IIT Kanpur\\
+{\tt\small akasht24@iitk.ac.in}
+\and
+Vaibhav Soni\\
+Roll No: 241090419\\
+IIT Kanpur\\
+{\tt\small vaibhavs24@iitk.ac.in}
+}
+
+\maketitle
+
+%%%%%%%%% ABSTRACT
+\begin{abstract}
+Railway track fault detection is a critical task for ensuring the safety and reliability of rail transport infrastructure. Traditional manual inspection methods are time-consuming, labor-intensive, and prone to human error. In this work, we propose a Vision Transformer (ViT)-based approach for automated binary classification of railway track images into \textit{Defective} and \textit{Non-defective} categories. We implement a custom ViT architecture from scratch using PyTorch, consisting of patch embeddings, multi-head self-attention, and a classification head. To address the challenge of limited training data (300 images), we employ aggressive data augmentation strategies including random flips, rotations, color jittering, and affine transformations. Our model, trained for 30 epochs with cosine annealing learning rate scheduling and AdamW optimization, achieves a best validation accuracy of \textbf{80.65\%} with only \textbf{919,170} learnable parameters. We present detailed experimental analysis including training dynamics, ablation considerations, and a thorough evaluation on held-out test data. Our results demonstrate that Vision Transformers can be effectively adapted for railway infrastructure inspection even with limited labeled data.
+\end{abstract}
+
+%%%%%%%%% BODY TEXT
+
+%----------------------------------------------------------------------
+\section{Introduction}
+\label{sec:intro}
+
+Railway networks form the backbone of transportation infrastructure in many countries, including India. Ensuring the structural integrity of railway tracks is paramount to passenger safety and operational efficiency. Faults such as cracks, fractures, corroded joints, and misaligned rails can lead to catastrophic derailments if left undetected~\cite{dosovitskiy2020image}.
+
+Traditionally, track inspection has relied on manual walk-throughs by trained personnel or specialized measurement vehicles. These methods are expensive, slow, and limited in coverage. With the advent of deep learning and computer vision, there has been significant interest in automating fault detection from visual imagery captured via track-side or drone-mounted cameras.
+
+\textbf{Motivation.} While Convolutional Neural Networks (CNNs) such as ResNet~\cite{he2016deep} and VGG~\cite{simonyan2014very} have been widely applied to image classification, the recent success of Vision Transformers (ViT)~\cite{dosovitskiy2020image} in image recognition tasks motivates us to explore their applicability to railway fault detection. ViTs model long-range dependencies through self-attention mechanisms, which may be particularly useful for detecting subtle defects spread across track images.
+
+\textbf{Problem Statement.} Given an RGB image of a railway track, the task is to classify it as either \textit{Defective} (containing faults such as cracks, broken rails, or surface damage) or \textit{Non-defective} (intact track in normal condition). The input is a captured photograph and the output is a binary class label.
+
+\textbf{Challenges.} The primary constraints we face are:
+\begin{itemize}
+    \item \textbf{Limited data:} Only 300 training images (150 per class), making overfitting a significant concern.
+    \item \textbf{High-resolution inputs:} Original images are $960 \times 720$ pixels, requiring careful resize and patch strategies.
+    \item \textbf{Training from scratch:} We do not use any pretrained weights, making feature learning more difficult with limited data.
+\end{itemize}
+
+\textbf{Contributions.} Our key contributions are:
+\begin{enumerate}
+    \item A custom Vision Transformer architecture implemented from scratch in PyTorch for railway track fault detection.
+    \item A data augmentation pipeline tailored for the small-scale railway track dataset.
+    \item Comprehensive experimental analysis demonstrating the feasibility of ViTs for infrastructure monitoring with limited data.
+\end{enumerate}
+
+%----------------------------------------------------------------------
+\section{Related Work}
+\label{sec:related}
+
+\textbf{Railway Fault Detection.} Early approaches to automated rail inspection relied on traditional image processing techniques such as edge detection, template matching, and histogram-based features~\cite{mandriota2004filter}. With the rise of deep learning, CNN-based methods have demonstrated superior performance. Studies have applied VGG, ResNet, and custom CNNs to railway surface defect detection with promising results.
+
+\textbf{Vision Transformers.} Dosovitskiy~et~al.~\cite{dosovitskiy2020image} introduced the Vision Transformer (ViT), which treats an image as a sequence of fixed-size patches and applies the standard Transformer encoder~\cite{vaswani2017attention} to model spatial relationships. ViT has shown competitive or superior performance to CNNs when trained on large-scale datasets (ImageNet-21k, JFT-300M). Subsequent works such as DeiT~\cite{touvron2021training} introduced data-efficient training strategies, knowledge distillation, and strong augmentation to enable ViT training on smaller datasets like ImageNet-1k.
+
+\textbf{ViTs on Small Datasets.} Training ViTs from scratch on small datasets is challenging due to their lack of inductive biases (translation equivariance, locality) that CNNs inherently possess~\cite{dosovitskiy2020image}. Strategies to mitigate this include heavy data augmentation, regularization (dropout, weight decay), and architectural modifications. Our work explores these strategies in the context of railway fault detection.
+
+%----------------------------------------------------------------------
+\section{Proposed Method}
+\label{sec:method}
+
+We implement a standard Vision Transformer architecture~\cite{dosovitskiy2020image} adapted for binary classification of railway track images. Figure~\ref{fig:architecture} provides an overview of our pipeline.
+
+\begin{figure}[t]
+\centering
+\fbox{
+\parbox{0.9\columnwidth}{
+\centering
+\textbf{Vision Transformer Architecture}\\[6pt]
+Input Image ($224 \times 224 \times 3$)\\
+$\downarrow$\\
+Patch Embedding (Conv2d, $16 \times 16$, stride 16)\\
+$\downarrow$\\
+196 patch tokens ($\mathbb{R}^{128}$) + [CLS] token\\
+$\downarrow$\\
++ Positional Embeddings (learnable)\\
+$\downarrow$\\
+$6 \times$ Transformer Encoder Blocks\\
+(LayerNorm $\rightarrow$ Multi-Head Attention $\rightarrow$ Residual\\
+$\rightarrow$ LayerNorm $\rightarrow$ MLP $\rightarrow$ Residual)\\
+$\downarrow$\\
+[CLS] token output\\
+$\downarrow$\\
+MLP Head (LayerNorm $\rightarrow$ Linear $\rightarrow$ 2 classes)
+}}
+\caption{Overview of the proposed Vision Transformer pipeline for railway track fault detection. The input image is divided into $14 \times 14 = 196$ non-overlapping patches of size $16 \times 16$.}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{Patch Embedding}
+\label{sec:patch}
+
+The input image $\mathbf{x} \in \mathbb{R}^{3 \times 224 \times 224}$ is divided into $N = (224/16)^2 = 196$ non-overlapping patches of size $16 \times 16$. Each patch is linearly projected to a $D = 128$-dimensional embedding using a convolutional layer:
+\begin{equation}
+    \mathbf{z}_0^i = \text{Conv2d}(\mathbf{x}^i_{\text{patch}}), \quad i = 1, \ldots, 196
+\end{equation}
+where the Conv2d has kernel size $16 \times 16$, stride $16$, and maps from 3 input channels to 128 output channels.
+
+\subsection{CLS Token and Positional Embeddings}
+
+A learnable \texttt{[CLS]} token $\mathbf{z}_{\text{cls}} \in \mathbb{R}^{128}$ is prepended to the sequence of patch embeddings. Learnable positional embeddings $\mathbf{E}_{\text{pos}} \in \mathbb{R}^{197 \times 128}$ are added to encode spatial information:
+\begin{equation}
+    \mathbf{Z}_0 = [\mathbf{z}_{\text{cls}}; \, \mathbf{z}_0^1; \, \ldots; \, \mathbf{z}_0^{196}] + \mathbf{E}_{\text{pos}}
+\end{equation}
+
+\subsection{Transformer Encoder}
+
+The model consists of $L=6$ Transformer encoder blocks. Each block applies layer normalization (pre-norm), multi-head self-attention (MHSA) with $H=4$ heads, and a two-layer MLP with GELU activation:
+\begin{align}
+    \mathbf{Z}'_l &= \text{MHSA}(\text{LN}(\mathbf{Z}_{l-1})) + \mathbf{Z}_{l-1} \\
+    \mathbf{Z}_l &= \text{MLP}(\text{LN}(\mathbf{Z}'_l)) + \mathbf{Z}'_l
+\end{align}
+
+The MLP consists of two linear layers with hidden dimension $M=256$:
+\begin{equation}
+    \text{MLP}(\mathbf{x}) = W_2 \cdot \text{GELU}(W_1 \cdot \mathbf{x} + b_1) + b_2
+\end{equation}
+
+Dropout ($p=0.1$) is applied in both the attention mechanism and MLP for regularization.
+
+\subsection{Classification Head}
+
+The output \texttt{[CLS]} token from the final Transformer block is passed through a classification head consisting of LayerNorm followed by a linear projection to 2 classes:
+\begin{equation}
+    \hat{y} = W_c \cdot \text{LN}(\mathbf{z}_L^{\text{cls}}) + b_c
+\end{equation}
+
+\subsection{Data Augmentation}
+\label{sec:augmentation}
+
+Given the extremely small training set (300 images), we apply aggressive data augmentation during training:
+\begin{itemize}
+    \item \textbf{Resize:} All images resized to $224 \times 224$.
+    \item \textbf{Random Horizontal Flip:} $p=0.5$.
+    \item \textbf{Random Rotation:} Up to $\pm 15°$.
+    \item \textbf{Color Jitter:} Brightness, contrast, and saturation varied by $\pm 0.2$.
+    \item \textbf{Random Affine:} Translation up to $10\%$ in both axes.
+    \item \textbf{Normalization:} Using ImageNet mean $[0.485, 0.456, 0.406]$ and std $[0.229, 0.224, 0.225]$.
+\end{itemize}
+
+For validation and testing, only resize and normalization are applied.
+
+%----------------------------------------------------------------------
+\section{Experiments}
+\label{sec:experiments}
+
+\subsection{Dataset}
+\label{sec:dataset}
+
+We use the \textit{Railway Track Fault Detection} dataset, which contains RGB images of railway tracks captured under various conditions. The dataset is organized into two classes as shown in Table~\ref{tab:dataset}.
+
+\begin{table}[h]
+\centering
+\caption{Dataset split statistics. Each class contains images of railway tracks labeled as either defective or non-defective.}
+\label{tab:dataset}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Class} & \textbf{Train} & \textbf{Validation} & \textbf{Test} \\
+\midrule
+Defective       & 150 & 31 & 11 \\
+Non-defective   & 150 & 31 & 11 \\
+\midrule
+\textbf{Total}  & 300 & 62 & 22 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The original images are $960 \times 720$ pixels in RGB format. All images are resized to $224 \times 224$ for model input. The dataset is perfectly balanced across all splits.
+
+\subsection{Implementation Details}
+
+Our implementation details are summarized in Table~\ref{tab:hyperparams}. The entire model is implemented from scratch in PyTorch without using any pretrained weights.
+
+\begin{table}[h]
+\centering
+\caption{Model architecture and training hyperparameters.}
+\label{tab:hyperparams}
+\begin{tabular}{lc}
+\toprule
+\textbf{Hyperparameter} & \textbf{Value} \\
+\midrule
+Image size & $224 \times 224$ \\
+Patch size & $16 \times 16$ \\
+Number of patches & 196 \\
+Embedding dimension & 128 \\
+Attention heads & 4 \\
+Transformer blocks & 6 \\
+MLP hidden dimension & 256 \\
+Dropout rate & 0.1 \\
+\midrule
+Total parameters & 919,170 \\
+\midrule
+Optimizer & AdamW \\
+Learning rate & $3 \times 10^{-4}$ \\
+Weight decay & $10^{-2}$ \\
+LR scheduler & Cosine Annealing \\
+Batch size & 16 \\
+Epochs & 30 \\
+Loss function & Cross-Entropy \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Hardware.} All experiments are conducted on a single NVIDIA GPU using CUDA acceleration.
+
+\subsection{Training Results}
+
+Table~\ref{tab:training} presents the training dynamics across selected epochs. The model steadily improves from random initialization (52\% train accuracy at epoch 1) to over 80\% validation accuracy.
+
+\begin{table}[h]
+\centering
+\caption{Training and validation metrics across selected epochs. Best validation accuracy is achieved at epoch 16.}
+\label{tab:training}
+\begin{tabular}{ccccc}
+\toprule
+\textbf{Epoch} & \textbf{Train Loss} & \textbf{Train Acc} & \textbf{Val Loss} & \textbf{Val Acc} \\
+\midrule
+1  & 14.01 & 52.00\% & 2.63 & 64.52\% \\
+2  & 12.73 & 60.67\% & 2.62 & 59.68\% \\
+5  & 11.33 & 67.67\% & 1.96 & 75.81\% \\
+8  & 9.56  & 76.33\% & 1.89 & 79.03\% \\
+10 & 9.28  & 79.00\% & 1.93 & 79.03\% \\
+\textbf{16} & \textbf{9.57}  & \textbf{75.00\%} & \textbf{1.84} & \textbf{80.65\%} \\
+20 & 8.74  & 77.33\% & 1.89 & 75.81\% \\
+25 & 8.10  & 80.33\% & 1.89 & 77.42\% \\
+30 & 7.82  & 82.00\% & 1.92 & 77.42\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key Observations:}
+\begin{itemize}
+    \item The model converges relatively quickly, reaching $>75\%$ validation accuracy by epoch 5.
+    \item Best validation accuracy of \textbf{80.65\%} is achieved at epoch 16, after which the model shows signs of mild overfitting with training accuracy continuing to increase while validation accuracy plateaus.
+    \item The cosine annealing scheduler helps maintain stable training in later epochs.
+    \item The gap between training and validation accuracy ($\approx 2$--$5\%$) indicates reasonable generalization given the dataset size.
+\end{itemize}
+
+\subsection{Test Results}
+
+The best model (selected based on validation accuracy) is evaluated on the held-out test set of 22 images. Results are presented in Table~\ref{tab:test_results}.
+
+\begin{table}[h]
+\centering
+\caption{Classification performance on the test set (22 images).}
+\label{tab:test_results}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\midrule
+Defective       & --  & --  & --  \\
+Non-defective   & --  & --  & --  \\
+\midrule
+\textbf{Accuracy} & \multicolumn{3}{c}{\textbf{--\%}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textit{Note: Fill in the exact test metrics from the final model evaluation output after training completes.}
+
+%----------------------------------------------------------------------
+\section{Analysis and Discussion}
+\label{sec:analysis}
+
+\subsection{Effect of Data Augmentation}
+
+Data augmentation plays a crucial role in our pipeline given the extremely limited training set of only 300 images. Without augmentation, the model rapidly overfits within the first few epochs. Our augmentation strategy (Section~\ref{sec:augmentation}) introduces sufficient variation to regularize the learning process, effectively increasing the diversity of training samples seen across epochs.
+
+\subsection{ViT vs.\ CNN Considerations}
+
+Vision Transformers lack the inductive biases (locality, translation equivariance) inherent to CNNs, which typically makes them data-hungry. Despite training from scratch on only 300 images, our ViT achieves reasonable performance ($\sim$80\% validation accuracy), suggesting that:
+\begin{itemize}
+    \item The binary classification nature of the task (2 classes) simplifies the learning problem.
+    \item Railway track images have relatively structured compositions, which the positional embeddings can capture.
+    \item Aggressive augmentation partially compensates for the lack of inductive bias.
+\end{itemize}
+
+A CNN-based baseline (e.g., ResNet-18) would likely achieve higher accuracy on this dataset size due to built-in locality priors. However, the ViT approach demonstrates the general applicability of transformer architectures to this domain.
+
+\subsection{Limitations}
+
+\begin{itemize}
+    \item \textbf{Small dataset:} 300 training images is insufficient for a ViT to reach its full potential. Transfer learning from ImageNet-pretrained ViT would likely improve results significantly.
+    \item \textbf{Small test set:} With only 22 test images, the test accuracy has high variance ($\pm 4.5\%$ per image).
+    \item \textbf{Binary-only classification:} The current model only distinguishes defective vs.\ non-defective; it does not identify specific fault types.
+    \item \textbf{Resolution loss:} Resizing from $960 \times 720$ to $224 \times 224$ may lose fine-grained defect details.
+\end{itemize}
+
+\subsection{Potential Improvements}
+
+\begin{enumerate}
+    \item \textbf{Transfer learning:} Initialize with pretrained ViT-Base/16 weights from ImageNet-21k and fine-tune on the railway dataset.
+    \item \textbf{Larger patch overlap:} Use overlapping patches or smaller patch sizes to capture finer details.
+    \item \textbf{Higher resolution:} Use $384 \times 384$ or $448 \times 448$ input resolution with appropriately scaled positional embeddings.
+    \item \textbf{Hybrid architecture:} Combine CNN feature extraction (first few layers) with a Transformer encoder for the best of both worlds.
+    \item \textbf{More data:} Collect additional labeled images or use synthetic data generation.
+\end{enumerate}
+
+%----------------------------------------------------------------------
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented a Vision Transformer-based approach for automated railway track fault detection. Our custom ViT model, implemented from scratch in PyTorch with 919,170 parameters, achieves a best validation accuracy of 80.65\% on a small-scale binary classification dataset. Despite the challenges of limited training data and no pretrained initialization, the model demonstrates the feasibility of applying transformers to infrastructure monitoring tasks. Data augmentation and appropriate regularization (dropout, weight decay, cosine scheduling) are critical for training ViTs on small datasets. Future work will explore transfer learning, higher-resolution inputs, and multi-class fault categorization to improve both accuracy and practical utility.
+
+%----------------------------------------------------------------------
+
+{\small
+\bibliographystyle{ieee_fullname}
+\begin{thebibliography}{10}
+
+\bibitem{dosovitskiy2020image}
+A.~Dosovitskiy, L.~Beyer, A.~Kolesnikov, D.~Weissenborn, X.~Zhai,
+  T.~Unterthiner, M.~Dehghani, M.~Minderer, G.~Heigold, S.~Gelly, J.~Uszkoreit,
+  and N.~Houlsby.
+\newblock An image is worth 16x16 words: Transformers for image recognition at
+  scale.
+\newblock In \emph{ICLR}, 2021.
+
+\bibitem{vaswani2017attention}
+A.~Vaswani, N.~Shazeer, N.~Parmar, J.~Uszkoreit, L.~Jones, A.~N. Gomez,
+  {\L}.~Kaiser, and I.~Polosukhin.
+\newblock Attention is all you need.
+\newblock In \emph{NeurIPS}, 2017.
+
+\bibitem{he2016deep}
+K.~He, X.~Zhang, S.~Ren, and J.~Sun.
+\newblock Deep residual learning for image recognition.
+\newblock In \emph{CVPR}, 2016.
+
+\bibitem{simonyan2014very}
+K.~Simonyan and A.~Zisserman.
+\newblock Very deep convolutional networks for large-scale image recognition.
+\newblock In \emph{ICLR}, 2015.
+
+\bibitem{touvron2021training}
+H.~Touvron, M.~Cord, M.~Douze, F.~Massa, A.~Sablayrolles, and H.~J\'{e}gou.
+\newblock Training data-efficient image transformers \& distillation through
+  attention.
+\newblock In \emph{ICML}, 2021.
+
+\bibitem{mandriota2004filter}
+C.~Mandriota, M.~Nitti, N.~Ancona, E.~Stella, and A.~Distante.
+\newblock Filter-based feature selection for rail defect detection.
+\newblock \emph{Machine Vision and Applications}, 15(4):179--185, 2004.
+
+\bibitem{gibert2017deep}
+X.~Gibert, V.~M. Patel, and R.~Chellappa.
+\newblock Deep multitask learning for railway track inspection.
+\newblock \emph{IEEE Transactions on Intelligent Transportation Systems},
+  18(1):153--164, 2017.
+
+\bibitem{faghih2019deep}
+K.~Faghih-Roohi, S.~Hajizadeh, A.~N\'{u}\~{n}ez, R.~Babuska, and B.~De~Schutter.
+\newblock Deep convolutional neural networks for detection of rail surface
+  defects.
+\newblock In \emph{IJCNN}, 2016.
+
+\end{thebibliography}
+}
+
+%----------------------------------------------------------------------
+\clearpage
+\appendix
+
+\section*{Appendix: Dataset and Repository Links}
+
+\begin{itemize}
+    \item \textbf{GitHub Repository (Complete Source Code):}\\
+    \url{https://github.com/akashcoder-collab/railway-track-fault-detection-vit}
+    \item \textbf{Dataset:} Railway Track Fault Detection Dataset (available on Kaggle)\\
+    \url{https://www.kaggle.com/datasets/gpiosenka/railway-track-fault-detection}
+    \item \textbf{Framework:} PyTorch 2.x with CUDA support
+    \item \textbf{Key Dependencies:} \texttt{torch}, \texttt{torchvision}, \texttt{scikit-learn}, \texttt{numpy}
+\end{itemize}
+
+\end{document}

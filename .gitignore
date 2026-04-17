@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pth
+*.pt
+data/
+new_data/
+archive/
+.ipynb_checkpoints/
+*.aux
+*.log
+*.out
+*.synctex.gz
