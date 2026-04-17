@@ -5,6 +5,9 @@ __pycache__/
 data/
 new_data/
 archive/
+writeup/
+new_data/
+archive/
 .ipynb_checkpoints/
 *.aux
 *.log
