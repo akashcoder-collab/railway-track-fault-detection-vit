@@ -15,8 +15,8 @@ print(f"Using device: {device}")
 data_root = "archive (1)/Railway Track fault Detection Updated"
 
 # Choose one:
-BACKBONE_TYPE = "efficientnet_b0"       # "resnet18" or "efficientnet_b0"
-WEIGHTS_PATH  = "best_efficientnet_b0.pth"   # or "efficientnet_model.pth"
+BACKBONE_TYPE = "resnet18"       # "resnet18" or "efficientnet_b0"
+WEIGHTS_PATH  = "best_resnet18.pth"   # or "efficientnet_model.pth"
 
 num_classes = 2
 batch_size = 16
