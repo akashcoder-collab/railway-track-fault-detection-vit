@@ -12,7 +12,7 @@ import numpy as np
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
-data_root = "archive (1)/Railway Track fault Detection Updated"
+data_root = "archive/Railway Track fault Detection Updated"
 
 # Choose one:
 BACKBONE_TYPE = "resnet18"       # "resnet18" or "efficientnet_b0"
