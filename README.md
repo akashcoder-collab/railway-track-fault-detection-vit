@@ -63,7 +63,7 @@ timm
  python railway_vit.py
 #For RESNET18 + VIT run:
  python cnn_baselines.py  
-#followed by
+ #followed by
  python resnet18_vit.py
 ```
 
