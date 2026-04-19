@@ -36,6 +36,9 @@ Railway Track Fault Detection dataset with the following split:
 #### From VIT
 - **Best Validation Accuracy:** 80.65% (Epoch 16)
 - **Training Accuracy:** ~82% (Epoch 30)
+#### From ResNeT-18 + VIT :
+- **Best Validation Accuracy:** 85.48%
+- **Training Accuracy:** 91~% 
 
 ## Data Augmentation
 - Random Horizontal Flip
@@ -50,12 +53,17 @@ torch
 torchvision
 scikit-learn
 numpy
+timm
 ```
 
 ## Usage
 ```bash
 # Place the dataset in archive/ directory
-run python railway_vit.py 
+For ViT run :
+ python railway_vit.py
+For RESNET18 + VIT run:
+ python cnn_baselines.py  followed by
+ python resnet18_vit.py
 ```
 
 ## Project Structure
