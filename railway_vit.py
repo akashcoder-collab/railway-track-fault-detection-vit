@@ -1,4 +1,4 @@
-import torch
+import torch 
 import torch.nn as nn
 from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader
