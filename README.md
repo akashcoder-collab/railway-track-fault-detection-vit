@@ -33,6 +33,7 @@ Railway Track Fault Detection dataset with the following split:
 | Test | 11 | 11 | 22 |
 
 ## Results
+- FROM VIT
 - **Best Validation Accuracy:** 80.65% (Epoch 16)
 - **Training Accuracy:** ~82% (Epoch 30)
 
