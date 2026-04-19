@@ -59,10 +59,11 @@ timm
 ## Usage
 ```bash
 # Place the dataset in archive/ directory
-For ViT run :
+#For ViT run :
  python railway_vit.py
-For RESNET18 + VIT run:
- python cnn_baselines.py  followed by
+#For RESNET18 + VIT run:
+ python cnn_baselines.py  
+#followed by
  python resnet18_vit.py
 ```
 
