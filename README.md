@@ -81,7 +81,7 @@ timm
 │       └── Test/
 │           ├── Defective/
 │           └── Non defective/
-├── cnn_baselines.py        # Trains CNN (ResNet/EfficientNet) and exports weights
+├── cnn_baselines.py        # Trains CNN (ResNet) and exports weights
 ├── resnet18_vit.py      # Hybrid architecture execution (CNN features + ViT)
 ├── best_resnet18.pth       # Generated ResNet weights (After running baselines)
 └── README.md
