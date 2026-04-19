@@ -7,7 +7,7 @@
 - **Vaibhav Soni** (Roll No: 241090419)
 
 ## Overview
-A custom Vision Transformer (ViT) implemented from scratch in PyTorch for binary classification of railway track images into **Defective** and **Non-defective** categories.
+A custom Vision Transformer (ViT) implemented from scratch in PyTorch for binary classification of railway track images into **Defective** and **Non-defective** categories. The file `railway_vit.py` applies pure ViT architecture on the dataset whereas the file `efficientnet_vit.py` applies the weights from trained EfficientNet-B0 model on the dataset for feature extraction then using the weights for the embedding in the vision transformer.
 
 ## Architecture
 | Component | Details |
@@ -54,7 +54,7 @@ numpy
 ## Usage
 ```bash
 # Place the dataset in archive/ directory
-python railway_vit.py
+run python railway_vit.py 
 ```
 
 ## Project Structure
