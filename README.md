@@ -81,8 +81,9 @@ timm
 │       └── Test/
 │           ├── Defective/
 │           └── Non defective/
-├── writeup/                # CVPR-format LaTeX write-up
-│   └── main.tex
+├── cnn_baselines.py        # Trains CNN (ResNet/EfficientNet) and exports weights
+├── resnet18_vit.py      # Hybrid architecture execution (CNN features + ViT)
+├── best_resnet18.pth       # Generated ResNet weights (After running baselines)
 └── README.md
 ```
 
