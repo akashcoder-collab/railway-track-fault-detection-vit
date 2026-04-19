@@ -43,7 +43,7 @@ batch_size = 16
 img_size = 224
 
 # ── Data Paths ──
-data_root = "archive (1)/Railway Track fault Detection Updated"
+data_root = "archive/Railway Track fault Detection Updated"
 
 # ════════════════════════════════════════════════════════════════
 # CELL 4 — CNN Baseline Models
