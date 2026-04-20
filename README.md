@@ -87,5 +87,3 @@ timm
 └── README.md
 ```
 
-## License
-MIT
